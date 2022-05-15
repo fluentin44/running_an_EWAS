@@ -1,0 +1,62 @@
+# Setting up
+
+1. Set up a library
+
+1.1. In your home folder (type cd on the command line to navigate to home - should see something along the lines of [<USERNAME>@cyan53 ~]$), 
+paste the commands into iridis one by one:
+
+nano .Renviron                                                                      # Opens up / creates a new file with this name in a text editor
+R_LIBS_USER=/home/<USERNAME>/software/R/x86_64-pc-linux-gnu-library/4.1.1           # Paste into the window
+>>> press ctrl and o then enter                                                     # Saves your file
+>>> press ctrl and x 								    # Exits nano (the text editor)
+exit                                                                                # Will exit the session
+
+1.2. Start a new session and paste the commands into iridis one by one:
+
+module list                                  # Look at which modules are loaded. 
+module load R/4.1.1 gcc/10.3.0               # Loads modules needed for R
+R                                            # Starts R 
+install.packages("BiocManager")              # Installs a package called BiocManager
+yes                                          # First message
+yes                                          # Second message (yes *if* it quotes the filpath you entered earlier)
+
+
+
+2. Installing pandoc 
+
+2.1. Paste the commands into iridis one by one
+
+module list         # Ensure R/4.1.1 gcc/10.3.0 are loaded
+cd                  # Moves to your home directory
+mkdir pandoc        # Makes a directory for pandoc
+cd pandoc           # Moves into the directory for pandoc
+wget https://github.com/jgm/pandoc/releases/download/2.11.1.1/pandoc-2.11.1.1-linux-amd64.tar.gz   # Downloads pandoc
+tar -xvf pandoc-2.11.1.1-linux-amd64.tar.gz   # Unzips it
+cd                  # Goes back to your home folder
+nano .bashrc        # Goes into a text editor for a hidden file called .bashrc
+
+2.2. Under line 1 paste:
+
+module load R/4.1.1 gcc/10.3.0
+
+2.3. Under user specific aliases and functions (line 8) paste:
+
+export PATH=/mainfs/home/<YOUR USERNAME>/pandoc/pandoc-2.11.1.1/bin:$PATH  # Put your user name in
+
+>>> press ctrl and o then enter
+>>> press ctrl and x
+
+2.4. Paste these commands into Iridis
+
+source .bashrc
+
+module list # if R and gcc arent loaded then run below
+module load R/4.1.1
+module load gcc/10.3.0
+
+R
+
+2.5. In r
+
+install.packages("rmarkdown") # if needed
+rmarkdown::pandoc_available(version = NULL, error = FALSE) # hopefully should say TRUE
