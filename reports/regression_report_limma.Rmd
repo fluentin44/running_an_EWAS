@@ -1,0 +1,550 @@
+---
+title: "`r paste(params$name)`"
+subtitle: "`r paste(params$covariates)`"
+date: "`r format(Sys.time(), '%d-%m-%Y')`"
+params:
+
+# The bit on the RIGHT needs to be exactly what is defined in the render function, left is need for the rmd
+
+  name:               name
+  raw_results:        raw_results
+  covariates:         covariate_names
+  results_summary:    results_summary
+  date_started:       date_started
+  p_data:             p
+  voi:                var 
+  
+output: 
+  html_document:
+    number_sections: true
+    fig_caption: true
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#setwd("E:/BMIQ MAV/19-07-30-split_cohort_and_run_season/reports/tG_summer")
+knitr::opts_knit$set(root.dir = here::here())
+options("scipen"=2, "digits"=3)
+```
+
+```{r libraries, include=FALSE}
+#library(GenABEL)
+# library(missMethyl)
+# library(limma) 
+# library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+library(tidyverse)
+library(kableExtra)
+library(formattable)
+library(Hmisc)
+library(ggpubr)
+library(gridExtra)
+library(rstatix)
+library(moments)
+
+```
+
+```{r set-up directories, include=FALSE}
+
+#dir.create(paste0("./reports/", "outs/", params$name), recursive = T)
+#dir.create(paste0("./reports/", "universes"), recursive = T)
+
+p   <- params$p_data
+voi <- params$voi
+#data_output <-      paste0("./reports", "/", params$name, "/")
+var_raw <-params$raw_results
+var<-var_raw
+
+# ----------------------------------------------------------
+
+#colnames(var)<-cols
+var <- var %>% arrange(adj.P.Val, P.Value) %>% rowid_to_column("Rank")
+var$ucsc_refgene_name<-sub(";.*", "", var$ucsc_refgene_name)
+var$ucsc_refgene_group<-sub(";.*", "", var$ucsc_refgene_group)
+
+# Define functions
+top_hits <- function(that){
+  output<- vector("character", nrow(that))
+  for(i in 1:nrow(that)){
+    if((is.na(that$ucsc_refgene_name[[i]]) | that$ucsc_refgene_name[[i]] == "") == TRUE){
+      output[[i]] <- that$row.names[[i]]
+    }
+    else{
+      output[[i]] <- that$ucsc_refgene_name[[i]]
+    }
+  }
+  output <- enframe(output, name = NULL, value = "Top 100 hits")
+  output <- dplyr::slice(output, 1:100)
+  return(output)
+}
+
+cont_var_normality <- function(df, variable){
+
+  df <- df[!is.na(df[[variable]]), ]
+  p1 <- ggdensity(df[[variable]], fill = "lightgray") +
+    stat_overlay_normal_density(color = "red", linetype = "dashed")
+  p2 <- ggplot(df, aes(x = df[[variable]])) +
+    geom_histogram(color = "darkblue", fill = "lightblue")
+  p3 <- ggqqplot(df[[variable]])
+  p4 <- ggplot(df, aes(x = "", y = df[[variable]])) +
+    geom_boxplot(outlier.colour = "red",
+                 outlier.size = 2)
+  #print(paste0("Number of values for ", variable, " = ", length(df[[variable]])))
+  grid.arrange(p1, p2, p3, p4, ncol = 2)
+  #grid.arrange(p2, p4, ncol = 2)
+}
+
+counting <- function(df, voi){
+  orbs <- sym(paste0(voi))
+  df %>% count({{orbs}})
+}
+
+gg_qqplot <- function(var_ps, ci = 0.95) {
+  n  <- length(var_ps)
+  df <- data.frame(
+    observed = -log10(sort(var_ps)),
+    expected = -log10(ppoints(n)),
+    clower   = -log10(qbeta(p = (1 - ci) / 2, shape1 = 1:n, shape2 = n:1)),
+    cupper   = -log10(qbeta(p = (1 + ci) / 2, shape1 = 1:n, shape2 = n:1))
+  )
+  log10Pe <- expression(paste("Expected -log"[10], plain(P)))
+  log10Po <- expression(paste("Observed -log"[10], plain(P)))
+  ggplot(df) +
+    geom_point(aes(expected, observed), shape = 1, size = 3) +
+    geom_abline(intercept = 0, slope = 1, alpha = 0.5) +
+    geom_line(aes(expected, cupper), linetype = 2) +
+    geom_line(aes(expected, clower), linetype = 2) +
+    xlab(log10Pe) +
+    ylab(log10Po) +
+    ggtitle("qqplot")
+}
+```
+
+# Distribution / breakdown of `r voi`
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+if(!is.factor(p[[voi]])){
+cont_var_normality(p, voi)
+} else {
+  counting(p, voi)
+}
+```
+
+<br />
+
+# Lambdas & covariates {.tabset .tabset-fade .tabset-pills}
+
+## Lambdas
+
+```{r sums and lambdas, echo=FALSE}
+
+rl <- params$results_summary
+rl 
+```
+
+<br />
+
+# Top 500 array hits
+
+```{r top 500 genes, echo=FALSE, warning=FALSE}
+#head(var)
+
+var %>%
+  mutate_at(c("logFC",
+              "AveExpr",
+              "t",
+              "P.Value",
+              "adj.P.Val",
+              "B"
+              ), ~signif(., 3)) %>%
+  arrange(adj.P.Val, P.Value) %>%
+  dplyr::slice(1:500) %>%
+  DT::datatable(
+    filter = 'top',
+    rownames = FALSE,
+    extensions = list('FixedColumns' = NULL,
+                      'Buttons' = NULL),
+    options = list(pageLength = 15,
+                   dom = 'Bfrtip',
+                   scrollX = TRUE,
+                   fixedColumns = TRUE,
+                   columnDefs = list(
+                     list(
+                       className = 'dt-center', 
+                       targets = 0:(ncol(var)-1))
+                     ),
+                   buttons = list(
+                       'copy',
+                     list(
+                       extend = 'colvisGroup',
+                       text = 'simplified',
+                       show = c(0,1,3,6,8),
+                       hide = c(2,4,5,7,9,10,11,12,13,14,15,16)
+                       ),
+                     list(
+                       extend = 'colvisGroup',
+                       text = 'show all',
+                       show = c(0:16)
+                       ),
+                     list(
+                       extend = 'colvis',
+                       text = 'see columns',
+                       collectionLayout= 'fixed two-column'
+                       )
+                     )
+    )
+  ) %>%
+  #DT::formatRound(c('logFC', 'estimate', 't', 'P.Value', 'adj.P.Val', 'B'), 5) %>%
+  DT::formatStyle(columns = c(1:12, 14), `text-align` = 'center') %>%
+  DT::formatStyle(columns = c(16,17), `text-align` = 'left') %>%
+  DT::formatStyle(
+    'adj.P.Val',
+    #color = DT::styleInterval(0.25, c('black', 'Black')),
+    backgroundColor = DT::styleInterval(0.25, c('#b3de69', '')),
+    fontWeight = DT::styleInterval(0.25, c('bold', ''))
+  )
+  # DT::formatStyle(
+  #   'estimate',
+  #   backgroundColor = DT::styleInterval(0.80, c('', '#fbb4ae')),
+  #   fontWeight = DT::styleInterval(0.80, c('', 'bold'))
+  # )
+```
+
+<br />
+
+# CpG subsets {.tabset .tabset-fade .tabset-pills}
+
+<br />
+
+## Top 100 hits
+
+```{r, include=FALSE}
+totty <- top_hits(var)
+```
+
+```{r, echo = FALSE}
+totty %>%
+  #dplyr::rename("Top 100 hits" = "") %>% 
+  #mutate_at(7, funs(round(., 3))) %>%
+  DT::datatable(
+    filter = 'top',
+    rownames = FALSE,
+    extensions = list('FixedColumns' = NULL,
+                      'Buttons' = NULL),
+    options = list(pageLength = 15,
+                   dom = 'Brtip',
+                   fixedColumns = TRUE,
+                   columnDefs = list(
+                     list(
+                       className = 'dt-center', 
+                       targets = "_all")
+                   ),
+                   buttons = 'copy'
+    )
+  )
+```
+
+<br />
+
+## Top 100 dmCpG-associated genes
+
+```{r top 100 named genes, include=FALSE}
+named_hits <- var[!(is.na(var$ucsc_refgene_name) | var$ucsc_refgene_name == ""),]
+top100_named_genes <-
+  named_hits %>%
+  arrange(adj.P.Val, P.Value) %>%
+  dplyr::slice(1:100) %>%
+  dplyr::select(ucsc_refgene_name)
+```
+
+```{r top 100 named genes graph, echo=FALSE}
+top100_named_genes %>%
+  dplyr::rename("Top 100 dmCpG-associated genes" = "ucsc_refgene_name") %>% 
+  #mutate_at(7, funs(round(., 3))) %>%
+  DT::datatable(
+    filter = 'top',
+    rownames = FALSE,
+    extensions = list('FixedColumns' = NULL,
+                      'Buttons' = NULL),
+    options = list(pageLength = 15,
+                   dom = 'Brtip',
+                   fixedColumns = TRUE,
+                   columnDefs = list(
+                     list(
+                       className = 'dt-center', 
+                       targets = "_all")
+                   ),
+                   buttons = 'copy'
+                   )
+    )
+```
+
+<br />
+
+## Top 100 gene-associated dmCpGs 
+
+```{r top 100 cgs, include=FALSE}
+top100_cgs <- 
+  named_hits %>%
+  arrange(adj.P.Val, P.Value) %>%
+  dplyr::slice(1:100) %>%
+  dplyr::select(row.names) 
+```
+
+```{r top 100 cgs graph, echo=FALSE}
+top100_cgs %>%
+  dplyr::rename("Top 100 gene-associated dmCpGs" = "row.names") %>% 
+  #mutate_at(7, funs(round(., 3))) %>%
+  DT::datatable(
+    filter = 'top',
+    rownames = FALSE,
+    extensions = list('FixedColumns' = NULL,
+                      'Buttons' = NULL),
+    options = list(pageLength = 15,
+                   dom = 'Brtip',
+                   fixedColumns = TRUE,
+                   columnDefs = list(
+                     list(
+                       className = 'dt-center', 
+                       targets = "_all")
+                   ),
+                   buttons = 'copy'
+                   )
+    )
+```
+
+<br />
+
+## Significant dmCpG-associated genes
+
+```{r top sig genenames, include=FALSE}
+named_hits <- var[!(is.na(var$ucsc_refgene_name) | var$ucsc_refgene_name == ""),]
+sig_genenames <-
+  named_hits %>%
+  dplyr::arrange(adj.P.Val, P.Value) %>%
+  dplyr::filter(adj.P.Val <0.25) %>%
+  dplyr::select(ucsc_refgene_name)
+```
+
+```{r top sig genenames table, echo=FALSE}
+sig_genenames %>%
+  dplyr::rename("Significant hits associated with named genes" = "ucsc_refgene_name") %>% 
+  #mutate_at(7, funs(round(., 3))) %>%
+  DT::datatable(
+    filter = 'top',
+    rownames = FALSE,
+    extensions = list('FixedColumns' = NULL,
+                      'Buttons' = NULL),
+    options = list(pageLength = 15,
+                   dom = 'Brtip',
+                   fixedColumns = TRUE,
+                   columnDefs = list(
+                     list(
+                       className = 'dt-center', 
+                       targets = "_all")
+                   ),
+                   buttons = 'copy'
+                   )
+    )
+```
+
+<br />
+
+## Significant gene-associated dmCpGs 
+
+```{r top sig cgs, include=FALSE}
+sig_cgs <-
+  var %>%
+  dplyr::arrange(adj.P.Val, P.Value) %>%
+  dplyr::filter(adj.P.Val <0.25) %>%
+  dplyr::select(row.names)
+```
+
+```{r top sig cgs graph, echo=FALSE}
+sig_cgs %>%
+  dplyr::rename("Significant cgs" = "row.names") %>% 
+  DT::datatable(
+    filter = 'top',
+    rownames = FALSE,
+    extensions = list('FixedColumns' = NULL,
+                      'Buttons' = NULL),
+    options = list(pageLength = 15,
+                   dom = 'Brtip',
+                   fixedColumns = TRUE,
+                   columnDefs = list(
+                     list(
+                       className = 'dt-center', 
+                       targets = "_all")
+                   ),
+                   buttons = 'copy'
+                   )
+    )
+```
+
+<br />
+
+# Graphs {.tabset .tabset-fade .tabset-pills}
+
+## Report qqplot and nominal p.values {.tabset .tabset-fade .tabset-pills}
+
+### qqplot 
+
+```{r qqplot function, include=FALSE, warning=FALSE}
+
+var_ps <- var$P.Value
+```
+
+```{r, echo=FALSE}
+gg_qqplot(var_ps)
+```
+
+### p.values
+
+```{r qqplot and nom. p value histogram, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(var, aes(x=var$P.Value)) + 
+  geom_histogram(color="darkblue", fill="lightblue", boundary = 0) +
+  ggtitle("P-values: var")
+```
+
+
+## CpG location data {.tabset .tabset-fade .tabset-pills}
+
+```{r pie chart data, include=FALSE}
+
+## Relation to island 
+pie_rel_to_island_all <-
+  var %>% 
+  dplyr::count(relation_to_island) %>% 
+  dplyr::arrange(desc(n)) 
+
+pie_region_100 <-
+  var[!(is.na(var$relation_to_island) | var$relation_to_island == ""),]
+pie_rel_to_island_100 <-
+  pie_region_100 %>%
+  arrange(adj.P.Val, P.Value) %>%
+  dplyr::slice(1:100) %>%
+  dplyr::select(relation_to_island) %>%
+  dplyr::count(relation_to_island) %>%
+  arrange(desc(n))
+  #rename(relation_to_island_100 = relation_to_island) %>% 
+
+
+## RefGene group
+pie_ref_group_all <-
+  var %>% 
+  dplyr::count(ucsc_refgene_group) %>% 
+  dplyr::arrange(desc(n))
+pie_ref_group_all$ucsc_refgene_group<-sub("^$", "Unknown", pie_ref_group_all$ucsc_refgene_group)
+
+pie_region_100 <-
+  var[!(is.na(var$ucsc_refgene_group) | var$ucsc_refgene_group == ""),]
+pie_ref_group_100 <-
+  pie_region_100 %>%
+  dplyr::arrange(adj.P.Val, P.Value) %>%
+  dplyr::slice(1:100) %>%
+  dplyr::select(ucsc_refgene_group) %>%
+  dplyr::count(ucsc_refgene_group) %>% 
+  dplyr::arrange(desc(n)) 
+  #rename(ucsc_refgene_group_100 = ucsc_refgene_group) %>% 
+pie_ref_group_100$ucsc_refgene_group<-sub("^$", "Unknown", pie_ref_group_100$ucsc_refgene_group)
+```
+
+### Relationship to island
+
+```{r, fig.cap="Relationship to island of the top 100 most significant array hits (*left*) and all hits (right)", echo = FALSE}
+colours <- list('#b3de69','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#fccde5')
+plotly::plot_ly() %>%
+  plotly::add_pie(data = pie_rel_to_island_100,
+                  labels = ~ relation_to_island,
+                  values = ~ n,
+                  type = "pie",
+                  #title = list(text = "bums",
+                  #             position = "top right",
+                  #             font = list(size = 40)),
+                  textposition = "outside",
+                  textinfo = "label+percent",
+                  outsidetextfont = list(family = "Helvetica",
+                                         size = 14),
+                  marker = list(colors = colours,
+                                line = list(color = '#FFFFFF', width = 3)),
+                  showlegend = FALSE,
+                  sort = TRUE,
+                  direction = "clockwise",
+                  domain = list(x = c(0, 0.35), y = c(0, 0.7))
+                  ) %>%
+  plotly::add_pie(data = pie_rel_to_island_all,
+                  labels = ~ relation_to_island,
+                  values = ~ n,
+                  type = "pie",
+                  #title = list(text = "bums",
+                  #             position = "top right",
+                  #             font = list(size = 40)),
+                  textposition = "outside",
+                  textinfo = "label+percent",
+                  outsidetextfont = list(family = "Helvetica",
+                                         size = 14),
+                  marker = list(colors = colours,
+                                line = list(color = '#FFFFFF', width = 3)),
+                  showlegend = FALSE,
+                  sort = TRUE,
+                  direction = "clockwise",
+                  domain = list(x = c(0.60, 0.95), y = c(0, 0.7))
+                  )
+
+```
+
+### Refgene group
+
+```{r, fig.cap="RefGene group of the top 100 most significant array hits (*left*) and all hits (right)", echo = FALSE}
+colours <- list('#b3de69','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#fccde5')
+plotly::plot_ly() %>%
+  plotly::add_pie(data = pie_ref_group_100,
+                  labels = ~ ucsc_refgene_group,
+                  values = ~ n,
+                  type = "pie",
+                  #title = list(text = "bums",
+                  #             position = "top right",
+                  #             font = list(size = 40)),
+                  textposition = "outside",
+                  textinfo = "label+percent",
+                  outsidetextfont = list(family = "Helvetica",
+                                         size = 14),
+                  marker = list(colors = colours,
+                                line = list(color = '#FFFFFF', width = 3)),
+                  showlegend = FALSE,
+                  sort = TRUE,
+                  direction = "clockwise",
+                  domain = list(x = c(0, 0.35), y = c(0, 0.7))
+                  ) %>%
+  plotly::add_pie(data = pie_ref_group_all,
+                  labels = ~ ucsc_refgene_group,
+                  values = ~ n,
+                  type = "pie",
+                  #title = list(text = "bums",
+                  #             position = "top right",
+                  #             font = list(size = 40)),
+                  textposition = "outside",
+                  textinfo = "label+percent",
+                  outsidetextfont = list(family = "Helvetica",
+                                         size = 14),
+                  marker = list(colors = colours,
+                                line = list(color = '#FFFFFF', width = 3)),
+                  showlegend = FALSE,
+                  sort = TRUE,
+                  direction = "clockwise",
+                  domain = list(x = c(0.60, 0.95), y = c(0, 0.7))
+                  )
+
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
