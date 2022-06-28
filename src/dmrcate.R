@@ -25,7 +25,7 @@ EPICdmrcate <- function(combat_beta,
                   C=C,
                   pcutoff=pcutoff,
                   min.cpgs=min.cpgs)
-	return(DMRs)
+	return(list(DMRs=DMRs, cpg_object=dm))
 }
 
 # # Generate your model matrix
