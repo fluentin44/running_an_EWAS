@@ -44,7 +44,7 @@ if(test) {
 message(paste0("Dimension of combat beta sub = ", nrow(combat)))
 message(paste0("number of non-na samples for ", var," ", var_extra, " = ", nrow(p)))
 
-if(exists("covariates")){
+if(!is.null(covariates)){
   mod <- model.matrix(as.formula(paste("~", var, "+", paste(covariates, collapse="+"), sep="")), data=p)
   message(paste("Model = ~", var, "+", paste(covariates, collapse="+"), sep=""))
 } else{
