@@ -35,9 +35,10 @@ options("scipen"=2, "digits"=3)
 
 ```{r libraries, include=FALSE}
 #library(GenABEL)
-# library(missMethyl)
-# library(limma) 
-# library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+library(missMethyl)
+library(limma) 
+library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+#library(DMRcate)
 library(tidyverse)
 library(kableExtra)
 library(formattable)
@@ -125,6 +126,14 @@ gg_qqplot <- function(var_ps, ci = 0.95) {
 }
 ```
 
+<!-- # ```{r} -->
+<!-- # p_data<-params$p_data -->
+<!-- #  -->
+<!-- # p_data  -->
+<!-- #  -->
+<!-- # cont_var_normality(params$p_data, var) -->
+<!-- # ``` -->
+
 # Distribution / breakdown of `r voi`
 
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
@@ -133,6 +142,14 @@ cont_var_normality(p, voi)
 } else {
   counting(p, voi)
 }
+```
+
+```{r, echo=FALSE}
+# dat <- counting(p, voi)
+# ggplot(dat, aes(x="", y=n, fill=jsex)) +
+#   geom_bar(stat="identity", width=1, color="white") +
+#   coord_polar("y", start=0) +
+#   theme_void() # remove background, grid, numeric labels
 ```
 
 <br />
@@ -145,9 +162,34 @@ cont_var_normality(p, voi)
 
 rl <- params$results_summary
 rl 
+
+# result_list <- tibble(
+#   "analysis" = params$name,
+#   #"cutoff" = params$cutoff,
+#   # "samples" = nrow(pheno_nona_raw),
+#   "Lambda" = (estlambda(var$P.Value, method  =  "median"))$estimate,
+#   "FDR<0.25" = sum(var$adj.P.Val < 0.25),
+#   "FDR<0.20" = sum(var$adj.P.Val < 0.20),
+#   "FDR<0.15" = sum(var$adj.P.Val < 0.15),
+#   "FDR<0.10" = sum(var$adj.P.Val < 0.10),
+#   "FDR<0.05" = sum(var$adj.P.Val < 0.05)
+# )
+# 
+# result_list
 ```
 
 <br />
+
+<!-- ## covariates -->
+
+<!-- ```{r covariates, echo=FALSE} -->
+<!-- tibble::enframe(colnames(pheno_forpcs)) %>%  -->
+<!--   slice(-1) %>%  -->
+<!--   select(-"name") %>%  -->
+<!--   rowid_to_column(var = "Number") %>%  -->
+<!--   rename("Covariate" = "value")  -->
+<!-- ``` -->
+
 
 # Top 500 array hits
 
@@ -388,6 +430,20 @@ sig_cgs %>%
 
 <br />
 
+<!-- ## Universe (without duplicates) -->
+
+<!-- ```{r, include=FALSE} -->
+<!-- var_univ <- var_raw[!(is.na(var_raw$ucsc_refgene_name) | var_raw$ucsc_refgene_name == ""),] -->
+<!-- var_univ$ucsc_refgene_name <- sub(";.*", "", var_univ$ucsc_refgene_name) -->
+<!-- gene_names <- unique(var_univ$ucsc_refgene_name) -->
+<!-- gene_names <- tibble::enframe(gene_names, name = NULL, value = "Universe") -->
+<!-- readr::write_csv(gene_names, paste0("./reports/", "universes/", params$name, "_universe.csv"), col_names = T) -->
+<!-- ``` -->
+
+<!-- ```{r, echo=FALSE} -->
+<!-- print(paste0("Saved on Iridis at"," -> ", "./reports/", "universes/", params$name, "_universe.csv")) -->
+<!-- ``` -->
+
 # Graphs {.tabset .tabset-fade .tabset-pills}
 
 ## Report qqplot and nominal p.values {.tabset .tabset-fade .tabset-pills}
@@ -411,6 +467,46 @@ ggplot(var, aes(x=var$P.Value)) +
   ggtitle("P-values: var")
 ```
 
+<!-- ## Correlation plot -->
+
+<!-- ```{r correlation plot, echo=FALSE} -->
+<!-- corrplot %>%  -->
+<!--   rownames_to_column() %>%  -->
+<!--   DT::datatable(filter = 'top', -->
+<!--                 rownames = FALSE, -->
+<!--                 extensions = 'FixedColumns', -->
+<!--                 options = list( -->
+<!--                   pageLength = nrow(corrplot),  -->
+<!--                   dom = 't', -->
+<!--                   scrollX = TRUE, -->
+<!--                   fixedColumns = TRUE -->
+<!--                   ) -->
+<!--                 ) %>%  -->
+<!--   DT::formatSignif((colnames(corrplot)), digits = 3) %>%  -->
+<!--   DT::formatStyle(columns = 2:ncol(corrplot), `text-align` = 'center') %>%  -->
+<!--   DT::formatStyle((colnames(corrplot)), -->
+<!--     #color = DT::styleInterval(0.25, c('black', 'Black')), -->
+<!--     backgroundColor = DT::styleInterval(0.05, c('#fb9a99', '#b2df8a')) -->
+<!--     #fontWeight = DT::styleInterval(0.25, c('', '')) -->
+<!--   ) -->
+
+<!-- ``` -->
+
+<!-- <br /> -->
+
+<!-- ## Regression function qqplot & p.value {.tabset .tabset-fade .tabset-pills} -->
+
+<!-- ### qqplot -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[1]] -->
+<!-- ``` -->
+
+<!-- ### p.values -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[2]] -->
+<!-- ``` -->
 
 ## CpG location data {.tabset .tabset-fade .tabset-pills}
 
@@ -548,3 +644,96 @@ plotly::plot_ly() %>%
 sessionInfo()
 ```
 
+<!-- ## Top 5 CpG regression diagnostics {.tabset .tabset-fade .tabset-pills} -->
+
+<!-- ### CpG 1 -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[3]][[1]] -->
+<!-- ``` -->
+
+<!-- ### CpG 2 -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[3]][[2]] -->
+<!-- ``` -->
+
+<!-- ### CpG 3 -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[3]][[3]] -->
+<!-- ``` -->
+
+<!-- ### CpG 4 -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[3]][[4]] -->
+<!-- ``` -->
+
+<!-- ### CpG 5 -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- plots[[3]][[5]] -->
+<!-- ``` -->
+
+
+
+
+
+
+<!-- # missMethyl {.tabset .tabset-pills} -->
+
+<!-- ```{r missMethyl, include = FALSE} -->
+
+<!-- Universe<-var$row.names -->
+<!-- Sig_0.25<-var$row.names[var$adj.P.Val<0.25] -->
+<!-- top100_named_genes <- var[!(is.na(var$ucsc_refgene_name) | var$ucsc_refgene_name == ""),] -->
+<!-- top_100_cpgs <- top100_named_genes %>% arrange(adj.P.Val) %>%  dplyr::slice(1:100) %>% pull(row.names) -->
+
+<!-- #FDR<0.25 -->
+<!-- results_0.25_go <- epicR::mm_sig_cpgs(Sig_0.25) -->
+
+<!-- ## 1:100 -->
+<!-- #top_100_cpgs<-as.character(top_100_cpgs) Tests gene ontology enrichment for -->
+<!-- #significant CpGs from Illumina's Infinium HumanMethylation450 or -->
+<!-- #MethylationEPIC array, taking into account the differing number of probes per -->
+<!-- #gene present on the array. -->
+<!-- Universe<-as.character(Universe) -->
+<!-- gst_top100_go<-gometh(sig.cpg=top_100_cpgs,  -->
+<!--                       all.cpg = Universe,  -->
+<!--                       collection = "GO",  -->
+<!--                       array.type = "EPIC" -->
+<!--                       ) -->
+<!-- colnames(gst_top100_go)[2]<-"Term" -->
+
+<!-- ### Results 1:100 - topGO pulls the most significant from the pack -->
+<!-- results_top100_go <- topGO(gst_top100_go, number = 50) -->
+<!-- results_top100_go <-  -->
+<!--   results_top100_go %>%  -->
+<!--   arrange(ONTOLOGY) -->
+<!-- ``` -->
+
+<!-- ## Significant hits (FDR<0.25) -->
+
+<!-- ```{r miss methyl tables, echo = FALSE} -->
+<!-- epicR::mm_plot_0.25(results_0.25_go) -->
+<!-- ``` -->
+
+<!-- ## Top 100 cpgs -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- results_top100_go %>%  -->
+<!--   DT::datatable(filter = 'top', -->
+<!--                 rownames = FALSE, -->
+<!--                 extensions = 'FixedColumns', -->
+<!--                 options = list( -->
+<!--                   pageLength = 10,  -->
+<!--                   dom = 'tpf', -->
+<!--                   scrollX = TRUE, -->
+<!--                   fixedColumns = TRUE -->
+<!--                   ) -->
+<!--                 ) %>%  -->
+<!--   DT::formatStyle(columns = c("ONTOLOGY", "N", "DE", "P.DE", "FDR"),  -->
+<!--                   `text-align` = 'center') %>% -->
+<!--   DT::formatSignif(columns = c("P.DE", "FDR"), digits = 3)  -->
+<!-- ``` -->

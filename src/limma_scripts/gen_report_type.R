@@ -8,6 +8,8 @@ message("Results required BACON adjustment")
 report_template$table <- table
 names(report_template$table)<-  c("row.names",
                                  "logFC",
+                                 "CI.L",
+                                 "CI.R",
                                  "AveExpr",
                                  "t",
                                  "P.Value",
@@ -31,6 +33,8 @@ message("Results did not require BACON adjustment")
 report_template$table <- table
 names(report_template$table)<-  c("row.names",
                                   "logFC",
+                                  "CI.L",
+                                  "CI.R",
                                   "AveExpr",
                                   "t",
                                   "P.Value",

@@ -1,6 +1,6 @@
 # missMethyl
 mm_it <- function(table, missmethyl_path, var, var_extra){
-if("Bacon_FDR" %in% colnames(table) & any(table$Bacon_FDR <0.25)){
+if("Bacon_FDR" %in% colnames(table) & any(table$Bacon_FDR <0.25)>3){
 message("Conducting missmethyl on baconed results")
 sig_cpgs <- table %>%
             filter(Bacon_FDR <0.25) %>%
@@ -15,7 +15,7 @@ g <- missMethyl::gometh(sig.cpg=sig_cpgs, all.cpg=all_cpgs, collection=c("GO","K
 go_results <- topGSA(g, n=Inf)
 saveRDS(go_results, paste0(missmethyl_path, var, "_", var_extra, ".rds"))
 
-} else if(!"Bacon_FDR" %in% colnames(table) & any(table$adj.P.Val <0.25)) {
+} else if(!"Bacon_FDR" %in% colnames(table) & any(table$adj.P.Val <0.25)>3) {
   message("Conducting missmethyl on results")
   sig_cpgs <- table %>%
               filter(adj.P.Val <0.25) %>%

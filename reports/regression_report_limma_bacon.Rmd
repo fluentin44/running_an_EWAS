@@ -12,9 +12,9 @@ params:
   results_summary:    results_summary
   date_started:       date_started
   p_data:             p
-  voi:                var 
-  
-output: 
+  voi:                var
+
+output:
   html_document:
     number_sections: true
     fig_caption: true
@@ -22,7 +22,7 @@ output:
     toc: true
     toc_float: true
     theme: flatly
-editor_options: 
+editor_options:
   chunk_output_type: inline
 ---
 
@@ -35,9 +35,9 @@ options("scipen"=2, "digits"=3)
 
 ```{r libraries, include=FALSE}
 #library(GenABEL)
-# library(missMethyl)
-# library(limma) 
-# library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+library(missMethyl)
+library(limma)
+library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
 library(tidyverse)
 library(kableExtra)
 library(formattable)
@@ -134,6 +134,14 @@ cont_var_normality(p, voi)
 }
 ```
 
+```{r, echo=FALSE}
+# dat <- counting(p, voi)
+# ggplot(dat, aes(x="", y=n, fill=jsex)) +
+#   geom_bar(stat="identity", width=1, color="white") +
+#   coord_polar("y", start=0) +
+#   theme_void() # remove background, grid, numeric labels
+```
+
 <br />
 
 # Lambdas & covariates {.tabset .tabset-fade .tabset-pills}
@@ -143,7 +151,7 @@ cont_var_normality(p, voi)
 ```{r sums and lambdas, echo=FALSE}
 
 rl <- params$results_summary
-rl 
+rl
 
 ```
 
@@ -178,7 +186,7 @@ var %>%
                    fixedColumns = TRUE,
                    columnDefs = list(
                      list(
-                       className = 'dt-center', 
+                       className = 'dt-center',
                        targets = 0:(ncol(var)-1))
                      ),
                    buttons = list(
@@ -232,7 +240,7 @@ totty <- top_hits(var)
 
 ```{r, echo = FALSE}
 totty %>%
-  #dplyr::rename("Top 100 hits" = "") %>% 
+  #dplyr::rename("Top 100 hits" = "") %>%
   #mutate_at(7, funs(round(., 3))) %>%
   DT::datatable(
     filter = 'top',
@@ -244,7 +252,7 @@ totty %>%
                    fixedColumns = TRUE,
                    columnDefs = list(
                      list(
-                       className = 'dt-center', 
+                       className = 'dt-center',
                        targets = "_all")
                    ),
                    buttons = 'copy'
@@ -267,7 +275,7 @@ top100_named_genes <-
 
 ```{r top 100 named genes graph, echo=FALSE}
 top100_named_genes %>%
-  dplyr::rename("Top 100 dmCpG-associated genes" = "ucsc_refgene_name") %>% 
+  dplyr::rename("Top 100 dmCpG-associated genes" = "ucsc_refgene_name") %>%
   #mutate_at(7, funs(round(., 3))) %>%
   DT::datatable(
     filter = 'top',
@@ -279,7 +287,7 @@ top100_named_genes %>%
                    fixedColumns = TRUE,
                    columnDefs = list(
                      list(
-                       className = 'dt-center', 
+                       className = 'dt-center',
                        targets = "_all")
                    ),
                    buttons = 'copy'
@@ -289,19 +297,19 @@ top100_named_genes %>%
 
 <br />
 
-## Top 100 gene-associated dmCpGs 
+## Top 100 gene-associated dmCpGs
 
 ```{r top 100 cgs, include=FALSE}
-top100_cgs <- 
+top100_cgs <-
   named_hits %>%
   arrange(Bacon_FDR, Bacon_P) %>%
   dplyr::slice(1:100) %>%
-  dplyr::select(row.names) 
+  dplyr::select(row.names)
 ```
 
 ```{r top 100 cgs graph, echo=FALSE}
 top100_cgs %>%
-  dplyr::rename("Top 100 gene-associated dmCpGs" = "row.names") %>% 
+  dplyr::rename("Top 100 gene-associated dmCpGs" = "row.names") %>%
   #mutate_at(7, funs(round(., 3))) %>%
   DT::datatable(
     filter = 'top',
@@ -313,7 +321,7 @@ top100_cgs %>%
                    fixedColumns = TRUE,
                    columnDefs = list(
                      list(
-                       className = 'dt-center', 
+                       className = 'dt-center',
                        targets = "_all")
                    ),
                    buttons = 'copy'
@@ -336,7 +344,7 @@ sig_genenames <-
 
 ```{r top sig genenames table, echo=FALSE}
 sig_genenames %>%
-  dplyr::rename("Significant hits associated with named genes" = "ucsc_refgene_name") %>% 
+  dplyr::rename("Significant hits associated with named genes" = "ucsc_refgene_name") %>%
   #mutate_at(7, funs(round(., 3))) %>%
   DT::datatable(
     filter = 'top',
@@ -348,7 +356,7 @@ sig_genenames %>%
                    fixedColumns = TRUE,
                    columnDefs = list(
                      list(
-                       className = 'dt-center', 
+                       className = 'dt-center',
                        targets = "_all")
                    ),
                    buttons = 'copy'
@@ -358,7 +366,7 @@ sig_genenames %>%
 
 <br />
 
-## Significant gene-associated dmCpGs 
+## Significant gene-associated dmCpGs
 
 ```{r top sig cgs, include=FALSE}
 sig_cgs <-
@@ -370,7 +378,7 @@ sig_cgs <-
 
 ```{r top sig cgs graph, echo=FALSE}
 sig_cgs %>%
-  dplyr::rename("Significant cgs" = "row.names") %>% 
+  dplyr::rename("Significant cgs" = "row.names") %>%
   DT::datatable(
     filter = 'top',
     rownames = FALSE,
@@ -381,7 +389,7 @@ sig_cgs %>%
                    fixedColumns = TRUE,
                    columnDefs = list(
                      list(
-                       className = 'dt-center', 
+                       className = 'dt-center',
                        targets = "_all")
                    ),
                    buttons = 'copy'
@@ -391,6 +399,19 @@ sig_cgs %>%
 
 <br />
 
+<!-- ## Universe (without duplicates) -->
+
+<!-- ```{r, include=FALSE} -->
+<!-- var_univ <- var_raw[!(is.na(var_raw$ucsc_refgene_name) | var_raw$ucsc_refgene_name == ""),] -->
+<!-- var_univ$ucsc_refgene_name <- sub(";.*", "", var_univ$ucsc_refgene_name) -->
+<!-- gene_names <- unique(var_univ$ucsc_refgene_name) -->
+<!-- gene_names <- tibble::enframe(gene_names, name = NULL, value = "Universe") -->
+<!-- readr::write_csv(gene_names, paste0("./reports/", "universes/", params$name, "_universe.csv"), col_names = T) -->
+<!-- ``` -->
+
+<!-- ```{r, echo=FALSE} -->
+<!-- print(paste0("Saved on Iridis at"," -> ", "./reports/", "universes/", params$name, "_universe.csv")) -->
+<!-- ``` -->
 
 # Graphs {.tabset .tabset-fade .tabset-pills}
 
@@ -419,7 +440,7 @@ gg_qqplot(var_ps)
 ### p.values - pre-bacon
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(var, aes(x=var$P.Value)) + 
+ggplot(var, aes(x=var$P.Value)) +
   geom_histogram(color="darkblue", fill="lightblue", boundary = 0) +
   ggtitle("P-values: var")
 ```
@@ -427,7 +448,7 @@ ggplot(var, aes(x=var$P.Value)) +
 ### p.values - post_bacon
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(var, aes(x=var$Bacon_P)) + 
+ggplot(var, aes(x=var$Bacon_P)) +
   geom_histogram(color="darkblue", fill="lightblue", boundary = 0) +
   ggtitle("P-values: var")
 ```
@@ -436,11 +457,11 @@ ggplot(var, aes(x=var$Bacon_P)) +
 ## CpG location data {.tabset .tabset-fade .tabset-pills}
 
 ```{r pie chart data, include=FALSE}
-## Relation to island 
+## Relation to island
 pie_rel_to_island_all <-
-  var %>% 
-  dplyr::count(relation_to_island) %>% 
-  dplyr::arrange(desc(n)) 
+  var %>%
+  dplyr::count(relation_to_island) %>%
+  dplyr::arrange(desc(n))
 
 pie_region_100 <-
   var[!(is.na(var$relation_to_island) | var$relation_to_island == ""),]
@@ -451,13 +472,13 @@ pie_rel_to_island_100 <-
   dplyr::select(relation_to_island) %>%
   dplyr::count(relation_to_island) %>%
   arrange(desc(n))
-  #rename(relation_to_island_100 = relation_to_island) %>% 
+  #rename(relation_to_island_100 = relation_to_island) %>%
 
 
 ## RefGene group
 pie_ref_group_all <-
-  var %>% 
-  dplyr::count(ucsc_refgene_group) %>% 
+  var %>%
+  dplyr::count(ucsc_refgene_group) %>%
   dplyr::arrange(desc(n))
 pie_ref_group_all$ucsc_refgene_group<-sub("^$", "Unknown", pie_ref_group_all$ucsc_refgene_group)
 
@@ -468,9 +489,9 @@ pie_ref_group_100 <-
   dplyr::arrange(Bacon_FDR, Bacon_P) %>%
   dplyr::slice(1:100) %>%
   dplyr::select(ucsc_refgene_group) %>%
-  dplyr::count(ucsc_refgene_group) %>% 
-  dplyr::arrange(desc(n)) 
-  #rename(ucsc_refgene_group_100 = ucsc_refgene_group) %>% 
+  dplyr::count(ucsc_refgene_group) %>%
+  dplyr::arrange(desc(n))
+  #rename(ucsc_refgene_group_100 = ucsc_refgene_group) %>%
 pie_ref_group_100$ucsc_refgene_group<-sub("^$", "Unknown", pie_ref_group_100$ucsc_refgene_group)
 ```
 

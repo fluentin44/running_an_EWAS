@@ -1,6 +1,6 @@
 bacon_adj <- function(table, adj_method){
 lambda <- median(qchisq(table$P.Value, df=1, lower.tail=F))/qchisq(0.5, df=1)
-#lambda <- 1.5
+#lambda <- 1.8
 if (lambda>1.2){
   bc <- bacon(teststatistics=table$t)
   ps <- as.data.frame(pval(bc))
